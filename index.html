@@ -230,7 +230,14 @@
                 </div>
                 <div class="input-group">
                     <label for="company-logo" class="text-blue-700">Company Logo:</label>
-                    <input type="file" id="company-logo" accept="image/*" class="w-full text-blue-700 p-2 border border-blue-300 rounded-md">
+                    <div class="flex items-center gap-2">
+                        <input type="file" id="company-logo" accept="image/*" class="w-full text-blue-700 p-2 border border-blue-300 rounded-md">
+                        <button id="generate-logo-btn" class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out" title="Generate Logo with AI">
+                            <svg class="w-5 h-5 inline-block" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M6.672 1.911a1.102 1.102 0 011.053-.743h4.15a1.102 1.102 0 011.053.743l1.404 4.195a1.102 1.102 0 01-.482 1.343l-1.956 1.129a1.102 1.102 0 00-.482 1.343l1.404 4.195a1.102 1.102 0 01-1.053.743h-4.15a1.102 1.102 0 01-1.053-.743l-1.404-4.195a1.102 1.102 0 01.482-1.343l1.956-1.129a1.102 1.102 0 00.482-1.343l-1.404-4.195zM10 12a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
                     <div class="mt-2" id="logo-preview-container">
                         <!-- Logo preview will be displayed here -->
                     </div>
@@ -494,6 +501,7 @@
         const companyNameInput = document.getElementById('company-name');
         const companyLogoInput = document.getElementById('company-logo');
         const logoPreviewContainer = document.getElementById('logo-preview-container');
+        const generateLogoBtn = document.getElementById('generate-logo-btn'); // New logo generation button
 
         const receiptPhotoInput = document.getElementById('receipt-photo');
         const extractDataBtn = document.getElementById('extract-data-btn');
@@ -1035,6 +1043,62 @@
             }
 
             await processSelectedReceipts(files); // Call the new function
+        });
+
+        // Event listener for "Generate Logo" button
+        generateLogoBtn.addEventListener('click', async () => {
+            if (!geminiApiKey) {
+                apiKeyModal.style.display = 'flex'; // Show API key modal if not set
+                return;
+            }
+
+            extractLoadingSpinner.classList.remove('hidden'); // Use extract spinner for consistency
+            generateLogoBtn.disabled = true;
+            extractionStatusDiv.textContent = 'Generating logo... This may take a moment.';
+            extractionStatusDiv.classList.remove('text-green-600', 'text-red-600');
+            extractionStatusDiv.classList.add('text-gray-600');
+
+            try {
+                const companyName = companyNameInput.value.trim();
+                const prompt = `Generate a modern, minimalist logo suitable for an "Smart AI Invoice Generator" company called "${companyName}". The logo should be clean, professional, and incorporate elements related to AI, invoices, or financial technology. Focus on a simple icon or a stylized lettermark. Output should be a square image.`;
+
+                const payload = { instances: { prompt: prompt }, parameters: { "sampleCount": 1} };
+                const apiKey = ""; // Canvas will provide this if empty
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+
+                if (result.predictions && result.predictions.length > 0 && result.predictions[0].bytesBase64Encoded) {
+                    const imageUrl = `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
+                    companyLogoBase64 = imageUrl; // Update the global variable
+                    const img = document.createElement('img');
+                    img.src = companyLogoBase64;
+                    img.alt = "Generated Company Logo";
+                    img.className = "h-20 object-contain mt-2 rounded-md shadow-sm";
+                    logoPreviewContainer.innerHTML = ''; // Clear previous preview
+                    logoPreviewContainer.appendChild(img);
+                    extractionStatusDiv.textContent = 'Logo generated successfully!';
+                    extractionStatusDiv.classList.remove('text-gray-600', 'text-red-600');
+                    extractionStatusDiv.classList.add('text-green-600');
+                } else {
+                    extractionStatusDiv.textContent = 'AI could not generate a logo.';
+                    extractionStatusDiv.classList.remove('text-gray-600');
+                    extractionStatusDiv.classList.add('text-red-600');
+                }
+            } catch (error) {
+                console.error('Error generating logo with AI:', error);
+                extractionStatusDiv.textContent = `Logo generation failed: ${error.message}`;
+                extractionStatusDiv.classList.remove('text-gray-600');
+                extractionStatusDiv.classList.add('text-red-600');
+            } finally {
+                extractLoadingSpinner.classList.add('hidden');
+                generateLogoBtn.disabled = false;
+            }
         });
 
 
