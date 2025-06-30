@@ -1,945 +1,655 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart AI Invoice Generator</title>
-    <link rel="icon" type="image/png" href="favicon.png" sizes="32x32">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5;
-        }
-        .container {
-            max-width: 900px;
-        }
-        .input-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: #333;
-        }
-        .input-group input[type="text"],
-        .input-group input[type="number"],
-        .input-group textarea,
-        .input-group select {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            color: #374151;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-            transition: border-color 0.2s;
-        }
-        .input-group input:focus,
-        .input-group textarea:focus,
-        .input-group select:focus {
-            outline: none;
-            border-color: #6366f1;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-        }
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s, box-shadow 0.2s;
-        }
-        .btn-primary {
-            background-color: #6366f1;
-            color: white;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .btn-primary:hover {
-            background-color: #4f46e5;
-            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-        }
-        .btn-secondary {
-            background-color: #e5e7eb;
-            color: #374151;
-            border: 1px solid #d1d5db;
-        }
-        .btn-secondary:hover {
-            background-color: #d1d5db;
-        }
-        .invoice-table th, .invoice-table td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        .invoice-table th {
-            background-color: #f9fafb;
-            font-weight: 600;
-            color: #4b5563;
-        }
-        .invoice-table tfoot td {
-            font-weight: 600;
-        }
-        .modal {
-            display: none; /* Hidden by default */
-            position: fixed; /* Stay in place */
-            z-index: 1000; /* Sit on top */
-            left: 0;
-            top: 0;
-            width: 100%; /* Full width */
-            height: 100%; /* Full height */
-            overflow: auto; /* Enable scroll if needed */
-            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-content {
-            background-color: #fefefe;
-            margin: auto;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            max-width: 500px;
-            position: relative;
-        }
-        .close-button {
-            position: absolute;
-            top: 10px;
-            right: 20px;
-            font-size: 24px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .loading-spinner {
-            border: 4px solid #f3f3f3; /* Light grey */
-            border-top: 4px solid #6366f1; /* Blue */
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        /* Styles for editable items table */
-        .editable-item-row td {
-            padding: 0.5rem;
-            vertical-align: middle;
-        }
-        .editable-item-row input[type="text"],
-        .editable-item-row input[type="number"] {
-            padding: 0.3rem 0.5rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0.25rem;
-            width: 100%;
-        }
-        .editable-item-row button {
-            background-color: #ef4444;
-            color: white;
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.25rem;
-            font-size: 0.875rem;
-        }
-        .editable-item-row button:hover {
-            background-color: #dc2626;
-        }
+import React, { useState, useEffect, useCallback } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, doc, setDoc, collection, query, getDocs } from 'firebase/firestore';
 
-        /* New API Key Modal Styles */
-        #api-key-modal .modal-content {
-            width: 90%;
-            max-width: 450px;
-        }
-        #api-key-modal input {
-            border: 1px solid #d1d5db;
-            border-radius: 0.5rem;
-            padding: 0.75rem;
-            width: 100%;
-            margin-top: 0.5rem;
-            margin-bottom: 1rem;
-        }
-        #api-key-modal button {
-            background-color: #10b981; /* Green color for submit */
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        #api-key-modal button:hover {
-            background-color: #059669;
-        }
-        #api-key-modal p.warning {
-            font-size: 0.875rem;
-            margin-top: 0.75rem;
-        }
-        #api-key-modal a {
-            color: #6366f1;
-            text-decoration: underline;
-        }
-        #api-key-modal a:hover {
-            color: #4f46e5;
-        }
+// Ensure Tailwind CSS is loaded (assuming it's available in the environment)
+// No explicit import for Tailwind needed in React component itself, just ensure the script is in HTML.
 
-        /* Print specific styles */
-        @media print {
-            body * {
-                visibility: hidden; /* Hide everything by default */
-            }
-            #invoice-output, #invoice-output * {
-                visibility: visible; /* Make only invoice output visible */
-            }
-            #invoice-output {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%; /* Ensure it takes full width for printing */
-                padding: 0 !important; /* Remove padding for print layout */
-                margin: 0 !important; /* Remove margin for print layout */
-                box-shadow: none !important; /* Remove box shadow for print */
-                border: none !important; /* Remove border for print */
-                background-color: white !important; /* Ensure white background */
-            }
-            .btn, .input-group, h1, h2, #extraction-status, #invoice-items-management, .bg-blue-50, .bg-gray-50, .bg-purple-50, .modal {
-                display: none !important; /* Explicitly hide control elements */
-            }
-            /* Ensure tables and content print well */
-            .invoice-table {
-                width: 100%;
-                border-collapse: collapse;
-            }
-            .invoice-table th, .invoice-table td {
-                border: 1px solid #ccc; /* Add borders for print clarity */
-                padding: 8px;
-            }
-            .invoice-table th {
-                background-color: #f0f0f0; /* Light background for headers */
-            }
-        }
-    </style>
-</head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-content-center p-4">
-    <div class="container bg-white rounded-lg shadow-xl p-6 md:p-8 space-y-6">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Smart AI Invoice Generator</h1>
+function App() {
+    // Firebase initialization and authentication
+    const [db, setDb] = useState(null);
+    const [auth, setAuth] = useState(null);
+    const [userId, setUserId] = useState(null);
+    const [isAuthReady, setIsAuthReady] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState('');
+    const [showSavedInvoices, setShowSavedInvoices] = useState(false);
+    const [savedInvoices, setSavedInvoices] = useState([]);
 
-        <div class="bg-blue-50 p-6 rounded-lg border border-blue-200">
-            <h2 class="text-2xl font-semibold text-blue-700 mb-4">Your Company Information</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div class="input-group">
-                    <label for="company-name" class="text-blue-700">Company Name:</label>
-                    <input type="text" id="company-name" placeholder="Your Company Inc." class="mt-1">
-                </div>
-                <div class="input-group">
-                    <label for="company-logo" class="text-blue-700">Company Logo:</label>
-                    <input type="file" id="company-logo" accept="image/*" class="w-full text-blue-700 p-2 border border-blue-300 rounded-md">
-                    <div class="mt-2" id="logo-preview-container">
-                        </div>
-                </div>
-            </div>
-        </div>
+    // Invoice state
+    const [invoiceDetails, setInvoiceDetails] = useState({
+        invoiceNumber: '',
+        invoiceDate: new Date().toISOString().slice(0, 10),
+        dueDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().slice(0, 10), // 7 days from now
+        companyName: 'Your Company Name',
+        companyAddress: '123 Business Rd, City, State, ZIP',
+        clientName: 'Client Name',
+        clientAddress: '456 Client St, City, State, ZIP',
+    });
 
-        <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
-            <h2 class="text-2xl font-semibold text-gray-700 mb-4">1. Upload Receipt Photo(s)</h2>
-            <div class="input-group mb-4">
-                <label for="receipt-photo" class="text-gray-700">Select Receipt Image(s):</label>
-                <input type="file" id="receipt-photo" accept="image/*" multiple class="w-full text-gray-700 p-2 border border-gray-300 rounded-md">
-            </div>
-            <button id="extract-data-btn" class="btn btn-primary w-full flex items-center justify-content-center gap-2">
-                Extract Data from Receipt(s)
-                <div id="extract-loading-spinner" class="loading-spinner hidden"></div>
-            </button>
-            <div id="extraction-status" class="mt-4 text-sm text-gray-600"></div>
-        </div>
+    const [items, setItems] = useState([
+        { id: 1, description: 'Service/Product 1', quantity: 1, unitPrice: 100.00 },
+    ]);
 
-        <div class="bg-purple-50 p-6 rounded-lg border border-purple-200">
-            <h2 class="text-2xl font-semibold text-purple-700 mb-4">2. Add/Edit Invoice Items</h2>
+    const [subtotal, setSubtotal] = useState(0);
+    const [taxRate, setTaxRate] = useState(10); // 10% tax rate
+    const [taxAmount, setTaxAmount] = useState(0);
+    const [total, setTotal] = useState(0);
 
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 items-end">
-                <div class="input-group md:col-span-2">
-                    <label for="manual-description" class="text-purple-700">Description:</label>
-                    <input type="text" id="manual-description" placeholder="Service fee, Product XYZ" class="mt-1">
-                </div>
-                <div class="input-group">
-                    <label for="manual-quantity" class="text-purple-700">Qty:</label>
-                    <input type="number" id="manual-quantity" value="1" min="0" step="1" class="mt-1">
-                </div>
-                <div class="input-group">
-                    <label for="manual-unit-price" class="text-purple-700">Unit Price ($):</label>
-                    <input type="number" id="manual-unit-price" value="0.00" min="0" step="0.01" class="mt-1">
-                </div>
-                <button id="add-manual-item-btn" class="btn btn-primary bg-purple-600 hover:bg-purple-700 mt-2 md:mt-0">Add Item Manually</button>
-            </div>
-            <button id="clear-all-items-btn" class="btn btn-secondary w-full mt-4 bg-red-400 hover:bg-red-500 text-white">Clear All Items</button>
+    // Initialize Firebase and set up auth listener
+    useEffect(() => {
+        try {
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
 
-
-            <div id="invoice-items-management" class="mt-6 bg-white p-4 rounded-lg border border-gray-200">
-                <h3 class="text-xl font-semibold text-gray-700 mb-3">Current Invoice Line Items:</h3>
-                <table class="w-full border-collapse">
-                    <thead>
-                        <tr>
-                            <th class="w-1/2 text-left p-2">Description</th>
-                            <th class="w-1/6 text-left p-2">Qty</th>
-                            <th class="w-1/6 text-left p-2">Unit Price</th>
-                            <th class="w-1/6 text-left p-2">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="editable-items-body">
-                        <tr><td colspan="4" class="text-center text-gray-500 p-4" id="no-items-message">No items added yet.</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-
-        <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
-            <h2 class="text-2xl font-semibold text-gray-700 mb-4">3. Invoice Details</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div class="input-group">
-                    <label for="client-name" class="text-gray-700">Client Name:</label>
-                    <input type="text" id="client-name" placeholder="John Doe Services" class="mt-1">
-                </div>
-                <div class="input-group">
-                    <label for="clientEmail" class="text-gray-700">Customer Email:</label>
-                    <input type="email" id="clientEmail" placeholder="customer@example.com" class="mt-1">
-                </div>
-                <div class="input-group">
-                    <label for="invoice-date" class="text-gray-700">Invoice Date:</label>
-                    <input type="date" id="invoice-date" class="mt-1">
-                </div>
-                <div class="input-group">
-                    <label for="due-date" class="text-gray-700">Due Date:</label>
-                    <input type="date" id="due-date" class="mt-1">
-                </div>
-            </div>
-
-            <div class="input-group mb-4">
-                <label for="invoiceDetails" class="text-gray-700">Additional Invoice Notes:</label>
-                <textarea id="invoiceDetails" placeholder="Add any specific notes or terms for this invoice here..." rows="4" class="mt-1"></textarea>
-            </div>
-
-
-            <h3 class="text-xl font-semibold text-gray-700 mb-3">Labor Cost</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div class="input-group">
-                    <label for="labor-hours" class="text-gray-700">Labor Hours:</label>
-                    <input type="number" id="labor-hours" value="0" min="0" step="0.5" class="mt-1">
-                </div>
-                <div class="input-group">
-                    <label for="hourly-rate" class="text-gray-700">Hourly Rate ($):</label>
-                    <input type="number" id="hourly-rate" value="0.00" min="0" step="0.01" class="mt-1">
-                </div>
-            </div>
-
-            <div class="input-group mb-4">
-                <label for="tax-rate" class="text-gray-700">Tax Rate (%):</label>
-                <input type="number" id="tax-rate" value="0" min="0" step="0.01" class="mt-1">
-            </div>
-        </div>
-
-        <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
-            <h2 class="text-2xl font-semibold text-gray-700 mb-4">4. Generate Invoice</h2>
-            <button id="generate-invoice-btn" class="btn btn-primary w-full flex items-center justify-content-center gap-2">
-                Generate Invoice
-                <div id="generate-loading-spinner" class="loading-spinner hidden"></div>
-            </button>
-        </div>
-
-        <div id="invoice-output" class="bg-white p-6 rounded-lg shadow-md border border-gray-200 hidden">
-            <div class="flex flex-col md:flex-row justify-between items-start mb-4">
-                <div>
-                    <img id="invoice-company-logo" src="" alt="Company Logo" class="h-16 mb-2 object-contain" onerror="this.style.display='none'" style="display:none;">
-                    <h2 class="text-2xl font-bold text-gray-800" id="display-company-name"></h2>
-                </div>
-                <div class="text-right mt-4 md:mt-0">
-                    <h2 class="text-2xl font-semibold text-gray-700 mb-4">Invoice</h2>
-                    <p class="text-sm text-gray-600"><strong>Client Name:</strong> <span id="display-client-name"></span></p>
-                    <p class="text-sm text-gray-600"><strong>Invoice Date:</strong> <span id="display-invoice-date"></span></p>
-                    <p class="text-sm text-gray-600"><strong>Due Date:</strong> <span id="display-due-date"></span></p>
-                </div>
-            </div>
-
-            <table class="invoice-table w-full border-collapse mt-6">
-                <thead>
-                    <tr>
-                        <th class="w-1/2">Description</th>
-                        <th class="w-1/6">Qty</th>
-                        <th class="w-1/6">Unit Price</th>
-                        <th class="w-1/6 text-right">Amount</th>
-                    </tr>
-                </thead>
-                <tbody id="final-invoice-items-body">
-                    </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="3" class="text-right">Materials Subtotal:</td>
-                        <td class="text-right" id="invoice-materials-subtotal"></td>
-                    </tr>
-                    <tr>
-                        <td colspan="3" class="text-right">Labor Total:</td>
-                        <td class="text-right" id="invoice-labor-total"></td>
-                    </tr>
-                    <tr>
-                        <td colspan="3" class="text-right">Tax:</td>
-                        <td class="text-right" id="invoice-tax"></td>
-                    </tr>
-                    <tr>
-                        <td colspan="3" class="text-right font-bold text-lg">Grand Total:</td>
-                        <td class="text-right font-bold text-lg" id="invoice-grand-total"></td>
-                    </tr>
-                </tfoot>
-            </table>
-            <div class="flex flex-col md:flex-row gap-4 mt-6">
-                <button class="btn btn-secondary flex-1 bg-green-500 hover:bg-green-600 text-white" id="printInvoiceButton">
-                    Print Invoice
-                </button>
-                <button class="btn btn-secondary flex-1 bg-blue-500 hover:bg-blue-600 text-white" id="copyInvoiceTextButton">
-                    Copy Invoice Text
-                </button>
-                <button class="btn btn-secondary flex-1 bg-purple-500 hover:bg-purple-600 text-white" id="saveInvoiceTextButton">
-                    Save Invoice as Text File
-                </button>
-            </div>
-        </div>
-
-        <div id="message-modal" class="modal">
-            <div class="modal-content">
-                <span class="close-button" id="close-modal-btn">&times;</span>
-                <p id="modal-message" class="text-lg text-gray-800 text-center"></p>
-            </div>
-        </div>
-
-        <div id="api-key-modal" class="modal">
-            <div class="modal-content">
-                <h3 class="text-xl font-semibold text-gray-800 mb-4">Enter Your Google Gemini API Key</h3>
-                <p class="text-gray-700 mb-3">To enable AI receipt data extraction, please obtain and enter your Google Gemini API Key.</p>
-                <p class="text-gray-700 text-sm mb-4">
-                    **How to get your API Key:**<br>
-                    1. Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="font-medium">Google AI Studio</a> or <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" class="font-medium">Google Cloud Console</a>.<br>
-                    2. Create a new project or select an existing one.<br>
-                    3. Create an API key for the Gemini API.<br>
-                    4. Copy the generated key and paste it below.
-                </p>
-                <input type="text" id="gemini-api-key-input" placeholder="Paste your API Key here..." class="w-full p-2 border rounded-md">
-                <button id="save-api-key-btn" class="btn btn-primary w-full mt-4">Save Key & Continue</button>
-                <p class="warning mt-2 text-red-600">**Warning:** Do not share your API key publicly. For production, consider using a secure backend proxy.</p>
-            </div>
-        </div>
-
-    </div>
-
-    <script>
-        let invoiceLineItems = []; // Unified array to store all invoice items (extracted + manual)
-        let companyLogoBase64 = null; // To store the base64 string of the company logo
-        let geminiApiKey = localStorage.getItem('geminiApiKey') || ''; // Load API key from localStorage
-
-        // Get DOM elements
-        const companyNameInput = document.getElementById('company-name');
-        const companyLogoInput = document.getElementById('company-logo');
-        const logoPreviewContainer = document.getElementById('logo-preview-container');
-
-        const receiptPhotoInput = document.getElementById('receipt-photo');
-        const extractDataBtn = document.getElementById('extract-data-btn');
-        const extractLoadingSpinner = document.getElementById('extract-loading-spinner');
-        const extractionStatusDiv = document.getElementById('extraction-status');
-
-        const manualDescriptionInput = document.getElementById('manual-description');
-        const manualQuantityInput = document.getElementById('manual-quantity');
-        const manualUnitPriceInput = document.getElementById('manual-unit-price');
-        const addManualItemBtn = document.getElementById('add-manual-item-btn');
-        const clearAllItemsBtn = document.getElementById('clear-all-items-btn'); // New clear button
-        const editableItemsBody = document.getElementById('editable-items-body');
-        const noItemsMessage = document.getElementById('no-items-message');
-
-
-        const clientNameInput = document.getElementById('client-name');
-        const clientEmailInput = document.getElementById('clientEmail'); 
-        const invoiceDateInput = document.getElementById('invoice-date');
-        const dueDateInput = document.getElementById('due-date');
-        const invoiceDetailsTextarea = document.getElementById('invoiceDetails'); 
-        const laborHoursInput = document.getElementById('labor-hours');
-        const hourlyRateInput = document.getElementById('hourly-rate'); 
-        const taxRateInput = document.getElementById('tax-rate'); // New: Tax Rate Input
-        const generateInvoiceBtn = document.getElementById('generate-invoice-btn');
-        const generateLoadingSpinner = document.getElementById('generate-loading-spinner');
-
-        const invoiceOutputDiv = document.getElementById('invoice-output');
-        const displayCompanyName = document.getElementById('display-company-name');
-        const invoiceCompanyLogo = document.getElementById('invoice-company-logo');
-        const displayClientName = document.getElementById('display-client-name');
-        const displayInvoiceDate = document.getElementById('display-invoice-date');
-        const displayDueDate = document.getElementById('display-due-date');
-        const finalInvoiceItemsBody = document.getElementById('final-invoice-items-body');
-        const invoiceMaterialsSubtotal = document.getElementById('invoice-materials-subtotal'); // New
-        const invoiceLaborTotal = document.getElementById('invoice-labor-total'); // New
-        const invoiceTax = document.getElementById('invoice-tax');
-        const invoiceGrandTotal = document.getElementById('invoice-grand-total');
-
-        // const sendEmailButton = document.getElementById('sendEmailButton'); // REMOVED
-        const printInvoiceButton = document.getElementById('printInvoiceButton'); // New: Print Invoice Button
-        const copyInvoiceTextButton = document.getElementById('copyInvoiceTextButton'); // NEW
-        const saveInvoiceTextButton = document.getElementById('saveInvoiceTextButton'); // NEW
-
-        const messageModal = document.getElementById('message-modal');
-        const modalMessage = document.getElementById('modal-message');
-        const closeModalBtn = document.getElementById('close-modal-btn');
-
-        const apiKeyModal = document.getElementById('api-key-modal');
-        const geminiApiKeyInput = document.getElementById('gemini-api-key-input');
-        const saveApiKeyBtn = document.getElementById('save-api-key-btn');
-
-        const MAX_RETRIES = 3; // Define max retries for AI extraction
-
-
-        // Set default dates and company name
-        window.onload = function() {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-            const day = String(today.getDate()).padStart(2, '0');
-            invoiceDateInput.value = `${year}-${month}-${day}`;
-
-            // Set due date to 7 days from now
-            const dueDate = new Date();
-            dueDate.setDate(today.getDate() + 7);
-            const dueYear = dueDate.getFullYear();
-            const dueMonth = String(dueDate.getMonth() + 1).padStart(2, '0');
-            const dueDay = String(dueDate.getDate()).padStart(2, '0');
-            dueDateInput.value = `${dueYear}-${dueMonth}-${dueDay}`;
-            renderEditableItems(); // Initial render for empty state
-        };
-
-        // Function to show custom message modal
-        function showMessage(message) {
-            modalMessage.textContent = message;
-            messageModal.style.display = 'flex';
-            modalMessage.style.textAlign = 'center';
-        }
-
-        // Function to hide custom message modal
-        closeModalBtn.onclick = function() {
-            messageModal.style.display = 'none';
-        }
-
-        // Close general message modal if user clicks outside of it
-        window.onclick = function(event) {
-            if (event.target == messageModal) {
-                messageModal.style.display = 'none';
-            }
-        }
-
-        // Handle saving API Key from the new modal
-        saveApiKeyBtn.addEventListener('click', () => {
-            const key = geminiApiKeyInput.value.trim();
-            if (key) {
-                geminiApiKey = key;
-                localStorage.setItem('geminiApiKey', key); // Store for current session
-                apiKeyModal.style.display = 'none'; // Hide the modal
-                // After saving, if there are files already selected, try to process them
-                if (receiptPhotoInput.files.length > 0) {
-                    processSelectedReceipts(); // Call a new function to process multiple files
-                }
-            } else {
-                showMessage("Please enter a valid Gemini API Key.");
-            }
-        });
-
-        // Function to render the editable invoice items table
-        function renderEditableItems() {
-            editableItemsBody.innerHTML = ''; // Clear current list
-            if (invoiceLineItems.length === 0) {
-                noItemsMessage.style.display = 'table-row';
-            } else {
-                noItemsMessage.style.display = 'none';
-                invoiceLineItems.forEach((item, index) => {
-                    const row = document.createElement('tr');
-                    row.className = 'editable-item-row border-b border-gray-100';
-                    row.innerHTML = `
-                        <td><input type="text" value="${item.description || ''}" data-index="${index}" data-field="description" class="p-2 border rounded-md w-full"></td>
-                        <td><input type="number" value="${item.quantity || 1}" min="1" step="1" data-index="${index}" data-field="quantity" class="p-2 border rounded-md w-full"></td>
-                        <td><input type="number" value="${(item.unit_price || 0).toFixed(2)}" min="0" step="0.01" data-index="${index}" data-field="unit_price" class="p-2 border rounded-md w-full"></td>
-                        <td><button data-index="${index}" class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-md">Delete</button></td>
-                    `;
-                    editableItemsBody.appendChild(row);
-                });
-
-                // Add event listeners for editing and deleting
-                editableItemsBody.querySelectorAll('input').forEach(input => {
-                    input.addEventListener('change', (e) => {
-                        const index = parseInt(e.target.dataset.index);
-                        const field = e.target.dataset.field;
-                        let value = e.target.value;
-
-                        if (field === 'quantity' || field === 'unit_price') {
-                            value = parseFloat(value) || 0;
-                            if (field === 'quantity' && value < 1) value = 1; 
-                            if (field === 'unit_price' && value < 0) value = 0; 
-                        }
-                        invoiceLineItems[index][field] = value;
-                        invoiceLineItems[index].total_price = (invoiceLineItems[index].quantity || 0) * (invoiceLineItems[index].unit_price || 0);
-                    });
-                });
-
-                editableItemsBody.querySelectorAll('button').forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        const index = parseInt(e.target.dataset.index);
-                        invoiceLineItems.splice(index, 1); 
-                        renderEditableItems(); 
-                    });
-                });
-            }
-        }
-
-        // Event listener for "Clear All Items" button
-        clearAllItemsBtn.addEventListener('click', () => {
-            if (confirm("Are you sure you want to clear all invoice items? This cannot be undone.")) {
-                invoiceLineItems = []; // Empty the array
-                renderEditableItems(); // Re-render to show empty state
-                extractionStatusDiv.textContent = 'All items cleared.';
-                extractionStatusDiv.classList.remove('text-green-600', 'text-red-600'); 
-            }
-        });
-
-        // Handle Company Logo Upload and Preview
-        companyLogoInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    companyLogoBase64 = e.target.result; // Store base64 string
-                    logoPreviewContainer.innerHTML = `<img src="${companyLogoBase64}" class="h-16 object-contain mt-2" alt="Company Logo Preview">`;
-                };
-                reader.readAsDataURL(file);
-            } else {
-                companyLogoBase64 = null;
-                logoPreviewContainer.innerHTML = '';
-            }
-        });
-
-        // Add Manual Item
-        addManualItemBtn.addEventListener('click', () => {
-            const description = manualDescriptionInput.value.trim();
-            const quantity = parseFloat(manualQuantityInput.value);
-            const unitPrice = parseFloat(manualUnitPriceInput.value);
-
-            if (!description || isNaN(quantity) || isNaN(unitPrice) || quantity <= 0 || unitPrice < 0) {
-                showMessage('Please enter a valid description, a quantity greater than 0, and a non-negative unit price for the manual item.');
+            if (Object.keys(firebaseConfig).length === 0) {
+                console.error("Firebase config is missing. Cannot initialize Firebase.");
+                setMessage("Error: Firebase configuration missing.");
                 return;
             }
 
-            invoiceLineItems.push({
-                description: description,
-                quantity: quantity,
-                unit_price: unitPrice,
-                total_price: quantity * unitPrice
-            });
+            const app = initializeApp(firebaseConfig);
+            const firestore = getFirestore(app);
+            const firebaseAuth = getAuth(app);
 
-            manualDescriptionInput.value = '';
-            manualQuantityInput.value = '1';
-            manualUnitPriceInput.value = '0.00';
-            renderEditableItems();
-        });
+            setDb(firestore);
+            setAuth(firebaseAuth);
 
-
-        // Function to process multiple receipt images
-        async function processSelectedReceipts() {
-            const files = receiptPhotoInput.files;
-            if (files.length === 0) {
-                showMessage("Please select one or more receipt images to extract data.");
-                return;
-            }
-
-            if (!geminiApiKey) {
-                apiKeyModal.style.display = 'flex';
-                return;
-            }
-
-            extractDataBtn.disabled = true;
-            extractLoadingSpinner.classList.remove('hidden');
-            extractionStatusDiv.textContent = 'Extracting data from receipts... This may take a moment.';
-            extractionStatusDiv.classList.remove('text-green-600', 'text-red-600');
-
-            let allExtractedItems = [];
-            let extractionErrors = [];
-
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                extractionStatusDiv.textContent = `Extracting data from receipt ${i + 1} of ${files.length}...`;
+            // Sign in anonymously or with custom token
+            const initialAuth = async () => {
                 try {
-                    const base64Image = await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = () => resolve(reader.result.split(',')[1]);
-                        reader.onerror = error => reject(error);
-                        reader.readAsDataURL(file);
-                    });
-
-                    // Call the Gemini Vision API
-                    const extractedData = await callGeminiVisionAPI(base64Image);
-                    
-                    // Assuming extractedData is an array of items, or convert it to one
-                    if (extractedData && Array.isArray(extractedData)) {
-                        allExtractedItems = allExtractedItems.concat(extractedData);
-                    } else if (extractedData) {
-                        // If it's a single item or not an array, treat it as such
-                        allExtractedItems.push(extractedData);
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(firebaseAuth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(firebaseAuth);
                     }
                 } catch (error) {
-                    console.error(`Error extracting data from ${file.name}:`, error);
-                    extractionErrors.push(`Failed to extract data from ${file.name}: ${error.message || error}`);
+                    console.error("Firebase authentication error:", error);
+                    setMessage(`Authentication error: ${error.message}`);
                 }
-            }
+            };
 
-            extractDataBtn.disabled = false;
-            extractLoadingSpinner.classList.add('hidden');
+            initialAuth();
 
-            if (allExtractedItems.length > 0) {
-                // Merge extracted items with existing manual items
-                invoiceLineItems = invoiceLineItems.concat(allExtractedItems);
-                renderEditableItems();
-                extractionStatusDiv.textContent = `Data extracted successfully from ${allExtractedItems.length} items. You can now review and edit them.`;
-                extractionStatusDiv.classList.add('text-green-600');
-            } else if (extractionErrors.length > 0) {
-                extractionStatusDiv.textContent = `Completed with errors: ${extractionErrors.join('; ')}. No items could be extracted.`;
-                extractionStatusDiv.classList.add('text-red-600');
-            } else {
-                extractionStatusDiv.textContent = 'No items found in the uploaded receipts.';
-                extractionStatusDiv.classList.remove('text-green-600', 'text-red-600');
-            }
-        }
-
-        receiptPhotoInput.addEventListener('change', processSelectedReceipts);
-
-        async function callGeminiVisionAPI(base64Image, retryCount = 0) {
-            const prompt = `
-                Analyze the receipt image and extract a JSON array of line items.
-                Each item in the array should have the following format:
-                {
-                    "description": "string", // Description of the item
-                    "quantity": number,      // Quantity of the item
-                    "unit_price": number,    // Price per unit of the item
-                    "total_price": number    // Total price for this line item (quantity * unit_price)
-                }
-                
-                If a quantity is not explicitly stated, assume it is 1.
-                If a unit price is not explicitly stated but a total price is, divide the total price by the quantity to get the unit price.
-                If only a total price is available for an item and no quantity/unit price, put it under unit_price with quantity 1.
-                Exclude any grand totals, subtotals, taxes, or tips as separate line items. Only include individual product/service line items.
-                Ensure all numbers are parsed correctly as numbers (e.g., 10.50, not "10.50").
-                Return ONLY the JSON array, without any additional text or formatting.
-            `;
-
-            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${geminiApiKey}`;
-
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [
-                                { text: prompt },
-                                {
-                                    inline_data: {
-                                        mime_type: 'image/jpeg', // Assuming JPEG. Adjust if other formats are expected.
-                                        data: base64Image
-                                    }
-                                }
-                            ]
-                        }]
-                    }),
-                });
-
-                if (!response.ok) {
-                    const errorBody = await response.json();
-                    console.error('API Error:', errorBody);
-                    // Implement retry logic for specific error codes if needed
-                    if (response.status === 429 && retryCount < MAX_RETRIES) { // Too Many Requests
-                        const delay = Math.pow(2, retryCount) * 1000 + Math.random() * 1000; // Exponential backoff
-                        console.warn(`Rate limit hit. Retrying in ${delay / 1000} seconds... (Attempt ${retryCount + 1})`);
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        return callGeminiVisionAPI(base64Image, retryCount + 1);
-                    }
-                    throw new Error(`Gemini API request failed: ${response.statusText} - ${errorBody.error?.message || 'Unknown error'}`);
-                }
-
-                const data = await response.json();
-                const textResponse = data.candidates[0].content.parts[0].text;
-                
-                // Attempt to parse the JSON string. Sometimes the model might include ```json```
-                let jsonString = textResponse.replace(/```json\n|```/g, '').trim();
-                
-                // Further clean up any leading/trailing non-JSON characters
-                const jsonMatch = jsonString.match(/\[.*\]|\{.*\}/s);
-                if (jsonMatch) {
-                    jsonString = jsonMatch[0];
+            // Listen for auth state changes
+            const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
+                if (user) {
+                    setUserId(user.uid);
+                    setIsAuthReady(true);
+                    setMessage('Authenticated successfully.');
                 } else {
-                    throw new Error("No valid JSON structure found in AI response.");
+                    setUserId(null);
+                    setIsAuthReady(true); // Still ready, just not authenticated
+                    setMessage('Not authenticated. Using anonymous access.');
                 }
-
-                const parsedData = JSON.parse(jsonString);
-
-                // Ensure quantities and prices are numbers
-                return parsedData.map(item => ({
-                    description: item.description,
-                    quantity: parseFloat(item.quantity) || 1,
-                    unit_price: parseFloat(item.unit_price) || 0.00,
-                    total_price: (parseFloat(item.quantity) || 1) * (parseFloat(item.unit_price) || 0.00)
-                }));
-
-            } catch (error) {
-                console.error("Error calling Gemini Vision API:", error);
-                throw error;
-            }
-        }
-
-
-        // Generate Invoice
-        generateInvoiceBtn.addEventListener('click', () => {
-            const companyName = companyNameInput.value.trim();
-            const clientName = clientNameInput.value.trim();
-            const invoiceDate = invoiceDateInput.value;
-            const dueDate = dueDateInput.value;
-            const laborHours = parseFloat(laborHoursInput.value) || 0;
-            const hourlyRate = parseFloat(hourlyRateInput.value) || 0;
-            const taxRate = parseFloat(taxRateInput.value) || 0; // Get tax rate
-
-            if (!companyName || !clientName || !invoiceDate || !dueDate) {
-                showMessage('Please fill in all required company and invoice details (Company Name, Client Name, Invoice Date, Due Date).');
-                return;
-            }
-
-            if (invoiceLineItems.length === 0 && laborHours === 0) {
-                showMessage('Please add at least one invoice item or specify labor hours.');
-                return;
-            }
-
-            generateLoadingSpinner.classList.remove('hidden');
-            generateInvoiceBtn.disabled = true;
-
-            displayCompanyName.textContent = companyName;
-            displayClientName.textContent = clientName;
-            displayInvoiceDate.textContent = invoiceDate;
-            displayDueDate.textContent = dueDate;
-
-            // Display company logo if available
-            if (companyLogoBase64) {
-                invoiceCompanyLogo.src = companyLogoBase64;
-                invoiceCompanyLogo.style.display = 'block';
-            } else {
-                invoiceCompanyLogo.style.display = 'none';
-            }
-
-            finalInvoiceItemsBody.innerHTML = '';
-            let materialsSubtotal = 0;
-
-            invoiceLineItems.forEach(item => {
-                const amount = item.quantity * item.unit_price;
-                materialsSubtotal += amount;
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${item.description}</td>
-                    <td>${item.quantity}</td>
-                    <td>$${item.unit_price.toFixed(2)}</td>
-                    <td class="text-right">$${amount.toFixed(2)}</td>
-                `;
-                finalInvoiceItemsBody.appendChild(row);
             });
 
-            // Calculate Labor Total
-            const laborTotal = laborHours * hourlyRate;
+            return () => unsubscribe(); // Cleanup auth listener
+        } catch (error) {
+            console.error("Failed to initialize Firebase:", error);
+            setMessage(`Firebase init error: ${error.message}`);
+        }
+    }, []);
 
-            // Calculate total before tax
-            const subtotalBeforeTax = materialsSubtotal + laborTotal;
+    // Calculate totals whenever items or tax rate change
+    useEffect(() => {
+        let currentSubtotal = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+        let currentTaxAmount = currentSubtotal * (taxRate / 100);
+        let currentTotal = currentSubtotal + currentTaxAmount;
 
-            // Calculate Tax Amount
-            const taxAmount = subtotalBeforeTax * (taxRate / 100);
+        setSubtotal(currentSubtotal);
+        setTaxAmount(currentTaxAmount);
+        setTotal(currentTotal);
+    }, [items, taxRate]);
 
-            // Calculate Grand Total
-            const grandTotal = subtotalBeforeTax + taxAmount;
+    // Handle input changes for invoice details
+    const handleInvoiceDetailsChange = (e) => {
+        const { name, value } = e.target;
+        setInvoiceDetails(prev => ({ ...prev, [name]: value }));
+    };
 
+    // Handle item input changes
+    const handleItemChange = (id, field, value) => {
+        setItems(prevItems =>
+            prevItems.map(item =>
+                item.id === id ? { ...item, [field]: field === 'quantity' || field === 'unitPrice' ? parseFloat(value) || 0 : value } : item
+            )
+        );
+    };
 
-            invoiceMaterialsSubtotal.textContent = `$${materialsSubtotal.toFixed(2)}`;
-            invoiceLaborTotal.textContent = `$${laborTotal.toFixed(2)}`;
-            invoiceTax.textContent = `$${taxAmount.toFixed(2)} (${taxRate}%)`;
-            invoiceGrandTotal.textContent = `$${grandTotal.toFixed(2)}`;
+    // Add a new item row
+    const addItem = () => {
+        setItems(prevItems => [
+            ...prevItems,
+            { id: prevItems.length > 0 ? Math.max(...prevItems.map(item => item.id)) + 1 : 1, description: '', quantity: 1, unitPrice: 0.00 }
+        ]);
+    };
 
+    // Remove an item row
+    const removeItem = (id) => {
+        setItems(prevItems => prevItems.filter(item => item.id !== id));
+    };
 
-            invoiceOutputDiv.classList.remove('hidden');
-            generateLoadingSpinner.classList.add('hidden');
-            generateInvoiceBtn.disabled = false;
+    // Display message for a short period
+    const showTemporaryMessage = (msg, duration = 3000) => {
+        setMessage(msg);
+        const timer = setTimeout(() => {
+            setMessage('');
+        }, duration);
+        return () => clearTimeout(timer); // Cleanup function for useEffect
+    };
 
-            // Scroll to the generated invoice
-            invoiceOutputDiv.scrollIntoView({ behavior: 'smooth' });
-        });
-
-        // Print Invoice Functionality
-        printInvoiceButton.addEventListener('click', () => {
-            window.print();
-        });
-
-        // NEW: Copy Invoice Text Functionality
-        copyInvoiceTextButton.addEventListener('click', async () => {
-            const invoiceText = generateInvoiceText();
+    // Copy invoice content to clipboard
+    const copyInvoice = () => {
+        const invoiceContentDiv = document.getElementById('invoice-preview');
+        if (invoiceContentDiv) {
+            const range = document.createRange();
+            range.selectNode(invoiceContentDiv);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
             try {
-                await navigator.clipboard.writeText(invoiceText);
-                showMessage('Invoice text copied to clipboard!');
+                document.execCommand('copy');
+                window.getSelection().removeAllRanges();
+                showTemporaryMessage('Invoice copied to clipboard!');
             } catch (err) {
-                console.error('Failed to copy invoice text: ', err);
-                showMessage('Failed to copy invoice text. Please try again or manually copy.');
+                console.error('Failed to copy invoice: ', err);
+                showTemporaryMessage('Failed to copy invoice.');
             }
-        });
+        } else {
+            showTemporaryMessage('Invoice content not found for copying.');
+        }
+    };
 
-        // NEW: Save Invoice as Text File Functionality
-        saveInvoiceTextButton.addEventListener('click', () => {
-            const invoiceText = generateInvoiceText();
-            const filename = `Invoice_${clientNameInput.value.trim().replace(/\s+/g, '_') || 'Untitled'}_${invoiceDateInput.value}.txt`;
-            const blob = new Blob([invoiceText], { type: 'text/plain;charset=utf-8' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(link.href);
-            showMessage('Invoice saved as text file!');
-        });
-
-        // Function to generate the full invoice text for copy/save
-        function generateInvoiceText() {
-            let text = `--- INVOICE ---\n\n`;
-            text += `Company Name: ${companyNameInput.value.trim()}\n`;
-            text += `Client Name: ${clientNameInput.value.trim()}\n`;
-            text += `Invoice Date: ${invoiceDateInput.value}\n`;
-            text += `Due Date: ${dueDateInput.value}\n`;
-            text += `Customer Email: ${clientEmailInput.value.trim()}\n`;
-            text += `\nInvoice Details:\n${invoiceDetailsTextarea.value.trim() || 'N/A'}\n\n`;
-
-            text += `--- LINE ITEMS ---\n`;
-            invoiceLineItems.forEach(item => {
-                text += `Description: ${item.description}, Quantity: ${item.quantity}, Unit Price: $${item.unit_price.toFixed(2)}, Amount: $${(item.quantity * item.unit_price).toFixed(2)}\n`;
-            });
-            
-            const materialsSubtotal = invoiceLineItems.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
-            const laborTotal = (parseFloat(laborHoursInput.value) || 0) * (parseFloat(hourlyRateInput.value) || 0);
-            const subtotalBeforeTax = materialsSubtotal + laborTotal;
-            const taxRate = parseFloat(taxRateInput.value) || 0;
-            const taxAmount = subtotalBeforeTax * (taxRate / 100);
-            const grandTotal = subtotalBeforeTax + taxAmount;
-
-            text += `\n--- SUMMARY ---\n`;
-            text += `Materials Subtotal: $${materialsSubtotal.toFixed(2)}\n`;
-            text += `Labor Hours: ${laborHoursInput.value || 0}\n`;
-            text += `Hourly Rate: $${(parseFloat(hourlyRateInput.value) || 0).toFixed(2)}\n`;
-            text += `Labor Total: $${laborTotal.toFixed(2)}\n`;
-            text += `Tax Rate: ${taxRate}%\n`;
-            text += `Tax Amount: $${taxAmount.toFixed(2)}\n`;
-            text += `GRAND TOTAL: $${grandTotal.toFixed(2)}\n\n`;
-
-            return text;
+    // Save invoice to Firestore
+    const saveInvoice = async () => {
+        if (!isAuthReady || !db || !userId) {
+            showTemporaryMessage('Authentication not ready. Cannot save invoice.');
+            return;
         }
 
-    </script>
-</body>
-</html>
+        setLoading(true);
+        try {
+            const invoiceToSave = {
+                ...invoiceDetails,
+                items: items,
+                subtotal: subtotal,
+                taxRate: taxRate,
+                taxAmount: taxAmount,
+                total: total,
+                createdAt: new Date().toISOString(),
+                userId: userId,
+            };
+
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const invoiceDocRef = doc(db, `/artifacts/${appId}/users/${userId}/invoices`, invoiceDetails.invoiceNumber || `invoice-${Date.now()}`);
+            await setDoc(invoiceDocRef, invoiceToSave);
+            showTemporaryMessage('Invoice saved successfully!');
+            setLoading(false);
+        } catch (error) {
+            console.error('Error saving invoice:', error);
+            showTemporaryMessage(`Error saving invoice: ${error.message}`);
+            setLoading(false);
+        }
+    };
+
+    // Fetch saved invoices
+    const fetchSavedInvoices = useCallback(async () => {
+        if (!isAuthReady || !db || !userId) {
+            showTemporaryMessage('Authentication not ready. Cannot fetch invoices.');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const invoicesCollectionRef = collection(db, `/artifacts/${appId}/users/${userId}/invoices`);
+            const q = query(invoicesCollectionRef);
+            const querySnapshot = await getDocs(q);
+            const fetchedInvoices = [];
+            querySnapshot.forEach((doc) => {
+                fetchedInvoices.push({ id: doc.id, ...doc.data() });
+            });
+            setSavedInvoices(fetchedInvoices);
+            showTemporaryMessage('Saved invoices loaded.');
+            setLoading(false);
+        } catch (error) {
+            console.error('Error fetching saved invoices:', error);
+            showTemporaryMessage(`Error fetching saved invoices: ${error.message}`);
+            setLoading(false);
+        }
+    }, [isAuthReady, db, userId]);
+
+    useEffect(() => {
+        if (showSavedInvoices && isAuthReady && db && userId) {
+            fetchSavedInvoices();
+        }
+    }, [showSavedInvoices, isAuthReady, db, userId, fetchSavedInvoices]);
+
+    // Load a selected invoice from the list
+    const loadInvoice = (invoice) => {
+        setInvoiceDetails({
+            invoiceNumber: invoice.invoiceNumber,
+            invoiceDate: invoice.invoiceDate,
+            dueDate: invoice.dueDate,
+            companyName: invoice.companyName,
+            companyAddress: invoice.companyAddress,
+            clientName: invoice.clientName,
+            clientAddress: invoice.clientAddress,
+        });
+        setItems(invoice.items);
+        setTaxRate(invoice.taxRate);
+        setShowSavedInvoices(false); // Hide the list after loading
+        showTemporaryMessage(`Invoice ${invoice.invoiceNumber} loaded.`);
+    };
+
+    // AI Feature: Generate Invoice Number
+    const generateInvoiceNumber = async () => {
+        setLoading(true);
+        try {
+            const prompt = "Generate a unique, professional, and sequential invoice number. It should be short and include the current year. Example: INV-2025-001.";
+            const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+            const payload = { contents: chatHistory };
+            const apiKey = ""; // Canvas will provide this if empty
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                const text = result.candidates[0].content.parts[0].text;
+                setInvoiceDetails(prev => ({ ...prev, invoiceNumber: text.trim() }));
+                showTemporaryMessage('AI generated invoice number.');
+            } else {
+                showTemporaryMessage('AI could not generate an invoice number.');
+            }
+        } catch (error) {
+            console.error('Error generating invoice number with AI:', error);
+            showTemporaryMessage(`AI error: ${error.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // AI Feature: Generate Item Description
+    const generateItemDescription = async (itemId, currentDescription) => {
+        setLoading(true);
+        try {
+            const prompt = `Elaborate on this invoice item description: "${currentDescription}". Make it professional and concise, suitable for an invoice.`;
+            const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+            const payload = { contents: chatHistory };
+            const apiKey = ""; // Canvas will provide this if empty
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                const text = result.candidates[0].content.parts[0].text;
+                setItems(prevItems =>
+                    prevItems.map(item =>
+                        item.id === itemId ? { ...item, description: text.trim() } : item
+                    )
+                );
+                showTemporaryMessage('AI generated item description.');
+            } else {
+                showTemporaryMessage('AI could not generate item description.');
+            }
+        } catch (error) {
+            console.error('Error generating item description with AI:', error);
+            showTemporaryMessage(`AI error: ${error.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-100 p-4 font-inter flex flex-col items-center">
+            {/* Loading and Message Overlay */}
+            {(loading || message) && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-xl flex flex-col items-center">
+                        {loading && (
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mb-4"></div>
+                        )}
+                        <p className="text-lg font-semibold text-gray-800">{message}</p>
+                        {userId && (
+                            <p className="text-sm text-gray-600 mt-2">User ID: {userId}</p>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            <div className="bg-white rounded-lg shadow-lg p-6 md:p-8 w-full max-w-4xl mb-8">
+                <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">Smart AI Invoice Generator</h1>
+
+                {/* Invoice Details Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label className="block text-gray-700 text-sm font-bold mb-2">Invoice Number:</label>
+                        <div className="flex items-center">
+                            <input
+                                type="text"
+                                name="invoiceNumber"
+                                value={invoiceDetails.invoiceNumber}
+                                onChange={handleInvoiceDetailsChange}
+                                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline flex-grow"
+                            />
+                            <button
+                                onClick={generateInvoiceNumber}
+                                className="ml-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out"
+                                disabled={loading}
+                                title="Generate Invoice Number with AI"
+                            >
+                                <svg className="w-5 h-5 inline-block" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M6.672 1.911a1.102 1.102 0 011.053-.743h4.15a1.102 1.102 0 011.053.743l1.404 4.195a1.102 1.102 0 01-.482 1.343l-1.956 1.129a1.102 1.102 0 00-.482 1.343l1.404 4.195a1.102 1.102 0 01-1.053.743h-4.15a1.102 1.102 0 01-1.053-.743l-1.404-4.195a1.102 1.102 0 01.482-1.343l1.956-1.129a1.102 1.102 0 00.482-1.343l-1.404-4.195zM10 12a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-gray-700 text-sm font-bold mb-2">Invoice Date:</label>
+                        <input
+                            type="date"
+                            name="invoiceDate"
+                            value={invoiceDetails.invoiceDate}
+                            onChange={handleInvoiceDetailsChange}
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-gray-700 text-sm font-bold mb-2">Due Date:</label>
+                        <input
+                            type="date"
+                            name="dueDate"
+                            value={invoiceDetails.dueDate}
+                            onChange={handleInvoiceDetailsChange}
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        />
+                    </div>
+                </div>
+
+                {/* Company and Client Details */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <h2 className="text-xl font-semibold text-gray-700 mb-4">Your Company Info</h2>
+                        <label className="block text-gray-700 text-sm font-bold mb-2">Company Name:</label>
+                        <input
+                            type="text"
+                            name="companyName"
+                            value={invoiceDetails.companyName}
+                            onChange={handleInvoiceDetailsChange}
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-3"
+                        />
+                        <label className="block text-gray-700 text-sm font-bold mb-2">Company Address:</label>
+                        <textarea
+                            name="companyAddress"
+                            value={invoiceDetails.companyAddress}
+                            onChange={handleInvoiceDetailsChange}
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-24"
+                        ></textarea>
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-semibold text-gray-700 mb-4">Bill To</h2>
+                        <label className="block text-gray-700 text-sm font-bold mb-2">Client Name:</label>
+                        <input
+                            type="text"
+                            name="clientName"
+                            value={invoiceDetails.clientName}
+                            onChange={handleInvoiceDetailsChange}
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-3"
+                        />
+                        <label className="block text-gray-700 text-sm font-bold mb-2">Client Address:</label>
+                        <textarea
+                            name="clientAddress"
+                            value={invoiceDetails.clientAddress}
+                            onChange={handleInvoiceDetailsChange}
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline h-24"
+                        ></textarea>
+                    </div>
+                </div>
+
+                {/* Invoice Items Section */}
+                <h2 className="text-xl font-semibold text-gray-700 mb-4">Items</h2>
+                <div className="overflow-x-auto mb-6">
+                    <table className="min-w-full bg-white rounded-lg shadow-md">
+                        <thead>
+                            <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                <th className="py-3 px-6 text-left">Description</th>
+                                <th className="py-3 px-6 text-center">Quantity</th>
+                                <th className="py-3 px-6 text-center">Unit Price</th>
+                                <th className="py-3 px-6 text-right">Amount</th>
+                                <th className="py-3 px-6 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="text-gray-600 text-sm font-light">
+                            {items.map(item => (
+                                <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-100">
+                                    <td className="py-3 px-6 text-left flex items-center">
+                                        <input
+                                            type="text"
+                                            value={item.description}
+                                            onChange={(e) => handleItemChange(item.id, 'description', e.target.value)}
+                                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mr-2"
+                                        />
+                                        <button
+                                            onClick={() => generateItemDescription(item.id, item.description)}
+                                            className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-full shadow-md transition duration-300 ease-in-out text-xs"
+                                            disabled={loading}
+                                            title="Generate Description with AI"
+                                        >
+                                            AI
+                                        </button>
+                                    </td>
+                                    <td className="py-3 px-6 text-center">
+                                        <input
+                                            type="number"
+                                            value={item.quantity}
+                                            onChange={(e) => handleItemChange(item.id, 'quantity', e.target.value)}
+                                            className="shadow appearance-none border rounded w-20 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-center"
+                                            min="0"
+                                        />
+                                    </td>
+                                    <td className="py-3 px-6 text-center">
+                                        <input
+                                            type="number"
+                                            value={item.unitPrice.toFixed(2)}
+                                            onChange={(e) => handleItemChange(item.id, 'unitPrice', e.target.value)}
+                                            className="shadow appearance-none border rounded w-24 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-center"
+                                            step="0.01"
+                                            min="0"
+                                        />
+                                    </td>
+                                    <td className="py-3 px-6 text-right">${(item.quantity * item.unitPrice).toFixed(2)}</td>
+                                    <td className="py-3 px-6 text-center">
+                                        <button
+                                            onClick={() => removeItem(item.id)}
+                                            className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full shadow-md transition duration-300 ease-in-out text-xs"
+                                        >
+                                            Remove
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                <button
+                    onClick={addItem}
+                    className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full shadow-md transition duration-300 ease-in-out mb-8"
+                >
+                    Add Item
+                </button>
+
+                {/* Totals Section */}
+                <div className="flex justify-end mb-8">
+                    <div className="w-full md:w-1/2">
+                        <div className="flex justify-between mb-2">
+                            <span className="text-gray-700">Subtotal:</span>
+                            <span className="font-semibold">${subtotal.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between mb-2">
+                            <label className="text-gray-700">Tax Rate (%):</label>
+                            <input
+                                type="number"
+                                value={taxRate}
+                                onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
+                                className="shadow appearance-none border rounded w-20 py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline text-right"
+                                min="0"
+                                max="100"
+                            />
+                        </div>
+                        <div className="flex justify-between mb-2">
+                            <span className="text-gray-700">Tax Amount:</span>
+                            <span className="font-semibold">${taxAmount.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between border-t-2 border-gray-300 pt-2 mt-2">
+                            <span className="text-gray-800 text-lg font-bold">Total:</span>
+                            <span className="text-gray-800 text-lg font-bold">${total.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                    <button
+                        onClick={copyInvoice}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105"
+                    >
+                        Copy Invoice
+                    </button>
+                    <button
+                        onClick={saveInvoice}
+                        className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105"
+                        disabled={loading}
+                    >
+                        Save Invoice
+                    </button>
+                    <button
+                        onClick={() => setShowSavedInvoices(prev => !prev)}
+                        className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105"
+                    >
+                        {showSavedInvoices ? 'Hide Saved Invoices' : 'View Saved Invoices'}
+                    </button>
+                </div>
+            </div>
+
+            {/* Saved Invoices List */}
+            {showSavedInvoices && (
+                <div className="bg-white rounded-lg shadow-lg p-6 md:p-8 w-full max-w-4xl mt-8">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Your Saved Invoices</h2>
+                    {savedInvoices.length === 0 ? (
+                        <p className="text-center text-gray-600">No invoices saved yet.</p>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full bg-white rounded-lg shadow-md">
+                                <thead>
+                                    <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                        <th className="py-3 px-6 text-left">Invoice #</th>
+                                        <th className="py-3 px-6 text-left">Client Name</th>
+                                        <th className="py-3 px-6 text-right">Total</th>
+                                        <th className="py-3 px-6 text-center">Saved On</th>
+                                        <th className="py-3 px-6 text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-gray-600 text-sm font-light">
+                                    {savedInvoices.map((invoice) => (
+                                        <tr key={invoice.id} className="border-b border-gray-200 hover:bg-gray-100">
+                                            <td className="py-3 px-6 text-left">{invoice.invoiceNumber}</td>
+                                            <td className="py-3 px-6 text-left">{invoice.clientName}</td>
+                                            <td className="py-3 px-6 text-right">${invoice.total.toFixed(2)}</td>
+                                            <td className="py-3 px-6 text-center">{new Date(invoice.createdAt).toLocaleDateString()}</td>
+                                            <td className="py-3 px-6 text-center">
+                                                <button
+                                                    onClick={() => loadInvoice(invoice)}
+                                                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded-full shadow-md transition duration-300 ease-in-out text-xs"
+                                                >
+                                                    Load
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            )}
+
+
+            {/* Hidden div for copying invoice content */}
+            <div id="invoice-preview" className="absolute left-[-9999px] top-[-9999px] w-[210mm] p-6 bg-white border border-gray-300 text-black text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>
+                <h1 className="text-2xl font-bold text-center mb-4">INVOICE</h1>
+                <div className="flex justify-between mb-6">
+                    <div>
+                        <p className="font-bold">{invoiceDetails.companyName}</p>
+                        <p>{invoiceDetails.companyAddress.split('\n').map((line, i) => <span key={i}>{line}<br/></span>)}</p>
+                    </div>
+                    <div className="text-right">
+                        <p><span className="font-bold">Invoice #:</span> {invoiceDetails.invoiceNumber}</p>
+                        <p><span className="font-bold">Date:</span> {invoiceDetails.invoiceDate}</p>
+                        <p><span className="font-bold">Due Date:</span> {invoiceDetails.dueDate}</p>
+                    </div>
+                </div>
+
+                <div className="mb-6">
+                    <p className="font-bold">Bill To:</p>
+                    <p>{invoiceDetails.clientName}</p>
+                    <p>{invoiceDetails.clientAddress.split('\n').map((line, i) => <span key={i}>{line}<br/></span>)}</p>
+                </div>
+
+                <table className="w-full mb-6 border-collapse">
+                    <thead>
+                        <tr className="bg-gray-100 border-b border-t border-gray-300">
+                            <th className="py-2 px-4 text-left">Description</th>
+                            <th className="py-2 px-4 text-center">Qty</th>
+                            <th className="py-2 px-4 text-right">Unit Price</th>
+                            <th className="py-2 px-4 text-right">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {items.map(item => (
+                            <tr key={item.id} className="border-b border-gray-200">
+                                <td className="py-2 px-4 text-left">{item.description}</td>
+                                <td className="py-2 px-4 text-center">{item.quantity}</td>
+                                <td className="py-2 px-4 text-right">${item.unitPrice.toFixed(2)}</td>
+                                <td className="py-2 px-4 text-right">${(item.quantity * item.unitPrice).toFixed(2)}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+
+                <div className="flex justify-end">
+                    <div className="w-1/2">
+                        <div className="flex justify-between mb-1">
+                            <span>Subtotal:</span>
+                            <span className="font-bold">${subtotal.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between mb-1">
+                            <span>Tax ({taxRate}%):</span>
+                            <span className="font-bold">${taxAmount.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between border-t border-gray-300 pt-2 mt-2">
+                            <span className="text-lg font-bold">Total:</span>
+                            <span className="text-lg font-bold">${total.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export default App;
