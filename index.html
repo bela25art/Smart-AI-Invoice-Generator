@@ -710,30 +710,36 @@
                                     result.candidates[0].content && result.candidates[0].content.parts &&
                                     result.candidates[0].content.parts.length > 0) {
                                     const jsonText = result.candidates[0].content.parts[0].text;
-                                    const parsedData = JSON.parse(jsonText);
+                                    try {
+                                        const parsedData = JSON.parse(jsonText);
 
-                                    let clientNameFound = false;
-                                    parsedData.forEach(item => {
-                                        if (item.client_name) {
-                                            clientNameInput.value = item.client_name;
-                                            clientNameFound = true;
-                                        } else if (item.description && item.quantity && item.unit_price) {
-                                            invoiceLineItems.push({
-                                                description: item.description,
-                                                quantity: item.quantity,
-                                                unit_price: item.unit_price,
-                                                total_price: item.quantity * item.unit_price
-                                            });
+                                        let clientNameFound = false;
+                                        parsedData.forEach(item => {
+                                            if (item.client_name) {
+                                                clientNameInput.value = item.client_name;
+                                                clientNameFound = true;
+                                            } else if (item.description && item.quantity && item.unit_price) {
+                                                invoiceLineItems.push({
+                                                    description: item.description,
+                                                    quantity: item.quantity,
+                                                    unit_price: item.unit_price,
+                                                    total_price: item.quantity * item.unit_price
+                                                });
+                                            }
+                                        });
+                                        if (!clientNameFound) {
+                                            clientNameInput.value = "Unknown Client";
                                         }
-                                    });
-                                    if (!clientNameFound) {
-                                        clientNameInput.value = "Unknown Client";
+                                        success = true;
+                                        resolve();
+                                    } catch (jsonParseError) {
+                                        console.error(`Attempt ${retries + 1}: JSON parsing failed for ${file.name}:`, jsonParseError);
+                                        console.error('Raw JSON text from AI:', jsonText);
+                                        retries++;
                                     }
-                                    success = true;
-                                    resolve();
                                 } else {
                                     retries++;
-                                    console.warn(`Attempt ${retries}: AI extraction failed for ${file.name}. Retrying...`);
+                                    console.warn(`Attempt ${retries}: AI extraction failed for ${file.name}. Retrying... No candidates or content found.`);
                                 }
                             } catch (error) {
                                 retries++;
@@ -926,7 +932,9 @@
             extractionStatusDiv.classList.add('text-gray-600');
 
             try {
-                const prompt = "Generate a unique, professional, and sequential invoice number. It should be short and include the current year. Example: INV-2025-001.";
+                const currentYear = new Date().getFullYear();
+                // Modified prompt to be very specific about the output format
+                const prompt = `Generate a unique, professional, and sequential invoice number for the year ${currentYear}. The format should be "INV-${currentYear}-XXX" where XXX is a 3-digit sequence number. Provide only the invoice number, nothing else. For example, if the current year is 2025, a valid output would be "INV-2025-001".`;
                 const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
                 const payload = { contents: chatHistory };
                 const apiKey = ""; // Canvas will provide this if empty
