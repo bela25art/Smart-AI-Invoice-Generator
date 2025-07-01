@@ -569,11 +569,28 @@
         // Initialize Firebase
         const initializeFirebase = async () => {
             try {
+                // Safely get __app_id and __firebase_config, providing defaults if undefined
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+                let firebaseConfig = {};
 
-                if (Object.keys(firebaseConfig).length === 0) {
-                    showMessage("Error: Firebase configuration missing.");
+                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                    try {
+                        firebaseConfig = JSON.parse(__firebase_config);
+                    } catch (e) {
+                        console.error("Error parsing __firebase_config:", e);
+                        showMessage("Error: Invalid Firebase configuration format. Please check your environment settings.");
+                        return;
+                    }
+                } else {
+                    // Provide a more informative message if config is missing
+                    showMessage(
+                        "Error: Firebase configuration missing. " +
+                        "If you're running this from GitHub, please ensure you've connected " +
+                        "your Firebase project and provided its configuration as environment variables " +
+                        "in your hosting platform (e.g., Firebase Hosting, Vercel, Netlify). " +
+                        "You can find your Firebase config in your Firebase project settings under 'Project settings' > 'Your apps'."
+                    );
+                    // Prevent further Firebase operations if config is missing
                     return;
                 }
 
