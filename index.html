@@ -1320,7 +1320,8 @@
                 }
                 savedInvoicesModal.style.display = 'flex'; // Show the modal
                 messageModal.style.display = 'none'; // Hide loading message
-            } catch (error) {
+            }
+            catch (error) {
                 console.error('Error fetching saved invoices:', error);
                 showMessage(`Error fetching saved invoices: ${error.message}`);
             }
