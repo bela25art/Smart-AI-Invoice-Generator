@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart AI Invoice Generator</title>
-    <!-- Favicon and Apple Touch Icon - Placeholder, replace with actual paths -->
-    <link rel="icon" type="image/png" href="https://placehold.co/32x32/cccccc/ffffff?text=INV" sizes="32x32">
-    <link rel="apple-touch-icon" href="https://placehold.co/180x180/cccccc/ffffff?text=INV" sizes="180x180">
+    <!-- Favicon and Apple Touch Icon - IMPORTANT: REPLACE THESE WITH YOUR ACTUAL LOGO DATA -->
+    <!-- For best results, save your generated logo as a PNG (e.g., logo.png) and link to it. -->
+    <!-- Example: <link rel="icon" type="image/png" href="/logo.png" sizes="32x32"> -->
+    <!-- Example: <link rel="apple-touch-icon" href="/logo.png" sizes="180x180"> -->
+    <link rel="icon" type="image/png" href="https://placehold.co/32x32/6366f1/ffffff?text=INV" sizes="32x32">
+    <link rel="apple-touch-icon" href="https://placehold.co/180x180/6366f1/ffffff?text=INV" sizes="180x180">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -1077,7 +1080,7 @@
 
             try {
                 const companyName = companyNameInput.value.trim();
-                const prompt = `Generate a modern, minimalist logo suitable for an "Smart AI Invoice Generator" company called "${companyName}". The logo should be clean, professional, and incorporate elements related to AI, invoices, or financial technology. Focus on a simple icon or a stylized lettermark. Output should be a square image.`;
+                const prompt = `Generate a modern, minimalist logo suitable for an "Smart Invoice Generator" company called "${companyName}". The logo should be clean, professional, and incorporate elements related to AI, invoices, or financial technology. Focus on a simple icon or a stylized lettermark. Output should be a square image.`;
 
                 const payload = { instances: { prompt: prompt }, parameters: { "sampleCount": 1} };
                 const apiKey = ""; // Canvas will provide this if empty
