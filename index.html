@@ -1,35 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart AI Invoice Generator</title>
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#ffffff">
-
-  <!-- Favicon and Touch Icons -->
-  <link rel="icon" type="image/png" sizes="32x32" href="/logo.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/logo.png">
-
-  <!-- Apple-specific meta tags -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Smart AI Invoice Generator">
-
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-
-  <!-- Your other styles and scripts remain unchanged below -->
-</head>
-<body>
-  <!-- body content remains unchanged -->
-</body>
-</html>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart AI Invoice Generator</title>
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ffffff">
+    <!-- Favicon and Touch Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/logo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/logo.png">
+    <!-- Apple-specific meta tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Smart AI Invoice Generator">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
         .input-group input[type="text"],
         .input-group input[type="number"],
-        .input-group input[type="date"], /* Added date input styling */
+        .input-group input[type="date"],
         .input-group textarea,
         .input-group select {
             width: 100%;
@@ -72,7 +63,8 @@
         .btn-secondary:hover {
             background-color: #d1d5db;
         }
-        .invoice-table th, .invoice-table td {
+        .invoice-table th,
+        .invoice-table td {
             padding: 0.75rem;
             text-align: left;
             border-bottom: 1px solid #e5e7eb;
@@ -149,7 +141,6 @@
         .editable-item-row button:hover {
             background-color: #dc2626;
         }
-
         /* New API Key Modal Styles */
         #api-key-modal .modal-content {
             width: 90%;
@@ -180,7 +171,6 @@
             color: #ef4444;
             margin-top: 0.75rem;
         }
-
         /* Print specific styles */
         @media print {
             body * {
@@ -264,7 +254,6 @@
         <!-- Manual Item Entry Section -->
         <div class="bg-purple-50 p-6 rounded-lg border border-purple-200">
             <h2 class="text-2xl font-semibold text-purple-700 mb-4">2. Add/Edit Invoice Items</h2>
-
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 items-end">
                 <div class="input-group md:col-span-2">
                     <label for="manual-description" class="text-purple-700">Description:</label>
@@ -282,7 +271,6 @@
             </div>
             <!-- New: Clear All Items button -->
             <button id="clear-all-items-btn" class="btn btn-secondary w-full mt-4 bg-red-400 hover:bg-red-500 text-white">Clear All Items</button>
-
 
             <div id="invoice-items-management" class="mt-6 bg-white p-4 rounded-lg border border-gray-200">
                 <h3 class="text-xl font-semibold text-gray-700 mb-3">Current Invoice Line Items:</h3>
@@ -302,7 +290,6 @@
                 </table>
             </div>
         </div>
-
 
         <!-- Invoice Details Section -->
         <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
@@ -332,12 +319,10 @@
                     <input type="date" id="due-date" class="mt-1">
                 </div>
             </div>
-
             <div class="input-group mb-4">
                 <label for="invoiceDetails" class="text-gray-700">Additional Invoice Notes:</label>
                 <textarea id="invoiceDetails" placeholder="Add any specific notes or terms for this invoice here..." rows="4" class="mt-1"></textarea>
             </div>
-
             <h3 class="text-xl font-semibold text-gray-700 mb-3">Labor Cost</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div class="input-group">
@@ -349,7 +334,6 @@
                     <input type="number" id="hourly-rate" value="30.00" min="0" step="0.01" class="mt-1">
                 </div>
             </div>
-
             <!-- New: Tax Rate Input -->
             <div class="input-group mb-4">
                 <label for="tax-rate" class="text-gray-700">Tax Rate (%):</label>
@@ -381,7 +365,6 @@
                     <p class="text-sm text-gray-600"><strong>Due Date:</strong> <span id="display-due-date"></span></p>
                 </div>
             </div>
-
             <table class="invoice-table w-full border-collapse mt-6">
                 <thead>
                     <tr>
@@ -479,22 +462,17 @@
                 </div>
             </div>
         </div>
-
     </div>
-
-    <script type="module">
-  
+    <script>
         // Get DOM elements
         const companyNameInput = document.getElementById('company-name');
         const companyLogoInput = document.getElementById('company-logo');
         const logoPreviewContainer = document.getElementById('logo-preview-container');
         const generateLogoBtn = document.getElementById('generate-logo-btn'); // New logo generation button
-
         const receiptPhotoInput = document.getElementById('receipt-photo');
         const extractDataBtn = document.getElementById('extract-data-btn');
         const extractLoadingSpinner = document.getElementById('extract-loading-spinner');
         const extractionStatusDiv = document.getElementById('extraction-status');
-
         const manualDescriptionInput = document.getElementById('manual-description');
         const manualQuantityInput = document.getElementById('manual-quantity');
         const manualUnitPriceInput = document.getElementById('manual-unit-price');
@@ -502,8 +480,6 @@
         const clearAllItemsBtn = document.getElementById('clear-all-items-btn'); // New clear button
         const editableItemsBody = document.getElementById('editable-items-body');
         const noItemsMessage = document.getElementById('no-items-message');
-
-
         const clientNameInput = document.getElementById('client-name');
         const invoiceNumberInput = document.getElementById('invoice-number'); // New: Invoice Number Input
         const generateInvoiceNumberBtn = document.getElementById('generate-invoice-number-btn'); // New: AI Invoice Number Button
@@ -515,7 +491,6 @@
         const taxRateInput = document.getElementById('tax-rate'); // New: Tax Rate Input
         const generateInvoiceBtn = document.getElementById('generate-invoice-btn');
         const generateLoadingSpinner = document.getElementById('generate-loading-spinner');
-
         const invoiceOutputDiv = document.getElementById('invoice-output');
         const displayCompanyName = document.getElementById('display-company-name');
         const invoiceCompanyLogo = document.getElementById('invoice-company-logo');
@@ -528,21 +503,17 @@
         const invoiceLaborTotal = document.getElementById('invoice-labor-total'); // New
         const invoiceTax = document.getElementById('invoice-tax');
         const invoiceGrandTotal = document.getElementById('invoice-grand-total');
-
         const copyInvoiceButton = document.getElementById('copyInvoiceButton'); // New: Copy Invoice Button
         const saveInvoiceButton = document.getElementById('saveInvoiceButton'); // New: Save Invoice Button
         const printInvoiceButton = document.getElementById('printInvoiceButton'); // New: Print Invoice Button
         const viewSavedInvoicesButton = document.getElementById('viewSavedInvoicesButton'); // New: View Saved Invoices Button
-
         const messageModal = document.getElementById('message-modal');
         const modalMessage = document.getElementById('modal-message');
         const modalUserId = document.getElementById('modal-user-id');
         const closeModalBtn = document.getElementById('close-modal-btn');
-
         const apiKeyModal = document.getElementById('api-key-modal');
         const geminiApiKeyInput = document.getElementById('gemini-api-key-input');
         const saveApiKeyBtn = document.getElementById('save-api-key-btn');
-
         const savedInvoicesModal = document.getElementById('saved-invoices-modal');
         const closeSavedInvoicesModalBtn = document.getElementById('close-saved-invoices-modal-btn');
         const savedInvoicesListDiv = document.getElementById('saved-invoices-list');
@@ -550,71 +521,13 @@
         const savedInvoicesTable = document.getElementById('saved-invoices-table');
         const savedInvoicesTableBody = document.getElementById('saved-invoices-table-body');
 
-
         const MAX_RETRIES = 3; // Define max retries for AI extraction
-
-        // Initialize Firebase
-        const initializeFirebase = async () => {
-            try {
-                // Safely get __app_id and __firebase_config, providing defaults if undefined
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                let firebaseConfig = {};
-
-                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                    try {
-                        firebaseConfig = JSON.parse(__firebase_config);
-                    } catch (e) {
-                        console.error("Error parsing __firebase_config:", e);
-                        showMessage("Error: Invalid Firebase configuration format. Please check your environment settings.");
-                        return;
-                    }
-                } else {
-                    // Provide a more informative message if config is missing
-                    showMessage(
-                        "Error: Firebase configuration missing. " +
-                        "If you're running this from GitHub, please ensure you've connected " +
-                        "your Firebase project and provided its configuration as environment variables " +
-                        "in your hosting platform (e.g., Firebase Hosting, Vercel, Netlify). " +
-                        "You can find your Firebase config in your Firebase project settings under 'Project settings' > 'Your apps'."
-                    );
-                    // Prevent further Firebase operations if config is missing
-                    return;
-                }
-
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-
-                // Sign in anonymously or with custom token
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        isAuthReady = true;
-                        showMessage('Authenticated successfully. User ID: ' + userId);
-                        modalUserId.textContent = 'User ID: ' + userId;
-                    } else {
-                        userId = null;
-                        isAuthReady = true;
-                        showMessage('Not authenticated. Using anonymous access.');
-                        modalUserId.textContent = 'User ID: Anonymous (data not persistent across sessions)';
-                    }
-                });
-            } catch (error) {
-                console.error("Failed to initialize Firebase:", error);
-                showMessage(`Firebase init error: ${error.message}`);
-            }
-        };
+        let invoiceLineItems = []; // Array to hold invoice line items
+        let companyLogoBase64 = null; // To store the company logo as base64
+        let geminiApiKey = localStorage.getItem('geminiApiKey') || ''; // Load API key from local storage
 
         // Set default dates and company name on window load
         window.onload = function() {
-            initializeFirebase(); // Initialize Firebase on load
-
             const today = new Date();
             const year = today.getFullYear();
             const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
@@ -628,6 +541,7 @@
             const dueMonth = String(dueDate.getMonth() + 1).padStart(2, '0');
             const dueDay = String(dueDate.getDate()).padStart(2, '0');
             dueDateInput.value = `${dueYear}-${dueMonth}-${dueDay}`;
+
             renderEditableItems(); // Initial render for empty state
         };
 
@@ -636,6 +550,7 @@
             modalMessage.textContent = message;
             messageModal.style.display = 'flex';
             modalMessage.style.textAlign = 'center';
+            modalUserId.textContent = ''; // Clear user ID info as Firebase is removed
         }
 
         // Function to hide custom message modal
@@ -663,7 +578,6 @@
             extractionStatusDiv.textContent = 'Extracting data... This may take a moment.';
             extractionStatusDiv.classList.remove('text-green-600', 'text-red-600');
             extractionStatusDiv.classList.add('text-gray-600');
-
             invoiceLineItems = []; // Clear existing items before extraction
 
             const processFile = async (file) => {
@@ -683,12 +597,7 @@
                                             role: "user",
                                             parts: [
                                                 { text: prompt },
-                                                {
-                                                    inlineData: {
-                                                        mimeType: file.type,
-                                                        data: base64ImageData
-                                                    }
-                                                }
+                                                { inlineData: { mimeType: file.type, data: base64ImageData } }
                                             ]
                                         }
                                     ],
@@ -708,7 +617,7 @@
                                         }
                                     }
                                 };
-                                const apiKey = "";
+                                const apiKey = ""; // Canvas will provide this if empty
                                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                                 const response = await fetch(apiUrl, {
@@ -724,7 +633,6 @@
                                     const jsonText = result.candidates[0].content.parts[0].text;
                                     try {
                                         const parsedData = JSON.parse(jsonText);
-
                                         let clientNameFound = false;
                                         parsedData.forEach(item => {
                                             if (item.client_name) {
@@ -880,7 +788,6 @@
             cancelClearBtn.onclick = () => {
                 messageModal.style.display = 'none'; // Close the confirmation modal
             };
-
             // Clear previous buttons and append new ones
             modalMessage.innerHTML = ''; // Clear existing message
             modalMessage.appendChild(document.createTextNode("Are you sure you want to clear all invoice items? This cannot be undone."));
@@ -888,7 +795,6 @@
             modalMessage.appendChild(confirmClearBtn);
             modalMessage.appendChild(cancelClearBtn);
         });
-
 
         // Event listener for company logo input
         companyLogoInput.addEventListener('change', (event) => {
@@ -1032,7 +938,6 @@
             }
         }
 
-
         // Event listener for "Extract Data from Receipt(s)" button
         extractDataBtn.addEventListener('click', async () => {
             const files = receiptPhotoInput.files;
@@ -1040,12 +945,10 @@
                 showMessage('Please select at least one receipt photo.');
                 return;
             }
-
             if (!geminiApiKey) {
                 apiKeyModal.style.display = 'flex'; // Show API key modal if not set
                 return;
             }
-
             await processSelectedReceipts(files); // Call the new function
         });
 
@@ -1055,7 +958,6 @@
                 apiKeyModal.style.display = 'flex'; // Show API key modal if not set
                 return;
             }
-
             extractLoadingSpinner.classList.remove('hidden'); // Use extract spinner for consistency
             generateLogoBtn.disabled = true;
             extractionStatusDiv.textContent = 'Generating logo... This may take a moment.';
@@ -1065,7 +967,6 @@
             try {
                 const companyName = companyNameInput.value.trim();
                 const prompt = `Generate a modern, minimalist logo suitable for an "Smart Invoice Generator" company called "${companyName}". The logo should be clean, professional, and incorporate elements related to AI, invoices, or financial technology. Focus on a simple icon or a stylized lettermark. Output should be a square image.`;
-
                 const payload = { instances: { prompt: prompt }, parameters: { "sampleCount": 1} };
                 const apiKey = ""; // Canvas will provide this if empty
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
@@ -1104,7 +1005,6 @@
                 generateLogoBtn.disabled = false;
             }
         });
-
 
         // Event listener for "Generate Invoice" button
         generateInvoiceBtn.addEventListener('click', () => {
@@ -1175,7 +1075,6 @@
 
             // Show invoice output
             invoiceOutputDiv.classList.remove('hidden');
-
             generateLoadingSpinner.classList.add('hidden');
             generateInvoiceBtn.disabled = false;
         });
@@ -1201,49 +1100,9 @@
             }
         });
 
-        // Event listener for "Save Invoice" button
+        // Event listener for "Save Invoice" button (Placeholder after Firebase removal)
         saveInvoiceButton.addEventListener('click', async () => {
-            if (!isAuthReady || !db || !userId) {
-                showMessage('Authentication not ready. Cannot save invoice. Please wait or refresh.');
-                return;
-            }
-
-            const invoiceNumber = invoiceNumberInput.value.trim();
-            if (!invoiceNumber) {
-                showMessage('Please generate or enter an invoice number before saving.');
-                return;
-            }
-
-            showMessage('Saving invoice...');
-            try {
-                const invoiceData = {
-                    companyName: companyNameInput.value.trim(),
-                    companyLogo: companyLogoBase64,
-                    clientName: clientNameInput.value.trim(),
-                    invoiceNumber: invoiceNumber,
-                    invoiceDate: invoiceDateInput.value,
-                    dueDate: dueDateInput.value,
-                    notes: invoiceDetailsTextarea.value.trim(),
-                    items: invoiceLineItems,
-                    laborHours: parseFloat(laborHoursInput.value) || 0,
-                    hourlyRate: parseFloat(hourlyRateInput.value) || 0,
-                    taxRate: parseFloat(taxRateInput.value) || 0,
-                    materialsSubtotal: parseFloat(invoiceMaterialsSubtotal.textContent.replace('$', '')) || 0,
-                    laborTotal: parseFloat(invoiceLaborTotal.textContent.replace('$', '')) || 0,
-                    taxAmount: parseFloat(invoiceTax.textContent.split(' ')[0].replace('$', '')) || 0,
-                    total: parseFloat(invoiceGrandTotal.textContent.replace('$', '')) || 0,
-                    createdAt: new Date().toISOString(),
-                    userId: userId,
-                };
-
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                const invoiceDocRef = doc(db, `/artifacts/${appId}/users/${userId}/invoices`, invoiceNumber);
-                await setDoc(invoiceDocRef, invoiceData);
-                showMessage('Invoice saved successfully!');
-            } catch (error) {
-                console.error('Error saving invoice:', error);
-                showMessage(`Error saving invoice: ${error.message}`);
-            }
+            showMessage('Saving invoices functionality has been removed in this version. Please implement your own storage solution.');
         });
 
         // Event listener for "Print Invoice" button
@@ -1251,77 +1110,23 @@
             window.print();
         });
 
-        // Event listener for "View Saved Invoices" button
+        // Event listener for "View Saved Invoices" button (Placeholder after Firebase removal)
         viewSavedInvoicesButton.addEventListener('click', async () => {
-            if (!isAuthReady || !db || !userId) {
-                showMessage('Authentication not ready. Cannot fetch invoices. Please wait or refresh.');
-                return;
-            }
-
-            showMessage('Loading saved invoices...');
-            try {
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                const invoicesCollectionRef = collection(db, `/artifacts/${appId}/users/${userId}/invoices`);
-                const q = query(invoicesCollectionRef);
-                const querySnapshot = await getDocs(q);
-                const fetchedInvoices = [];
-                querySnapshot.forEach((doc) => {
-                    fetchedInvoices.push({ id: doc.id, ...doc.data() });
-                });
-
-                savedInvoicesTableBody.innerHTML = ''; // Clear previous list
-                if (fetchedInvoices.length === 0) {
-                    noSavedInvoicesMessage.style.display = 'block';
-                    savedInvoicesTable.classList.add('hidden');
-                } else {
-                    noSavedInvoicesMessage.style.display = 'none';
-                    savedInvoicesTable.classList.remove('hidden');
-                    fetchedInvoices.forEach(invoice => {
-                        const row = document.createElement('tr');
-                        row.className = 'border-b border-gray-200 hover:bg-gray-100';
-                        row.innerHTML = `
-                            <td class="py-3 px-6 text-left">${invoice.invoiceNumber}</td>
-                            <td class="py-3 px-6 text-left">${invoice.clientName}</td>
-                            <td class="py-3 px-6 text-right">$${invoice.total.toFixed(2)}</td>
-                            <td class="py-3 px-6 text-center">${new Date(invoice.createdAt).toLocaleDateString()}</td>
-                            <td class="py-3 px-6 text-center">
-                                <button data-invoice-id="${invoice.id}" class="load-saved-invoice-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded-full shadow-md transition duration-300 ease-in-out text-xs">Load</button>
-                            </td>
-                        `;
-                        savedInvoicesTableBody.appendChild(row);
-                    });
-
-                    // Add event listeners for loading saved invoices
-                    savedInvoicesTableBody.querySelectorAll('.load-saved-invoice-btn').forEach(button => {
-                        button.addEventListener('click', (e) => {
-                            const invoiceIdToLoad = e.target.dataset.invoiceId;
-                            const invoiceToLoad = fetchedInvoices.find(inv => inv.id === invoiceIdToLoad);
-                            if (invoiceToLoad) {
-                                loadInvoice(invoiceToLoad);
-                                savedInvoicesModal.style.display = 'none'; // Close modal after loading
-                                showMessage(`Invoice ${invoiceToLoad.invoiceNumber} loaded.`);
-                            }
-                        });
-                    });
-                }
-                savedInvoicesModal.style.display = 'flex'; // Show the modal
-                messageModal.style.display = 'none'; // Hide loading message
-            }
-            catch (error) {
-                console.error('Error fetching saved invoices:', error);
-                showMessage(`Error fetching saved invoices: ${error.message}`);
-            }
+            showMessage('Viewing saved invoices functionality has been removed in this version. Please implement your own storage solution.');
         });
 
-        // Function to load a saved invoice into the form
+        // Function to load a saved invoice into the form (Placeholder after Firebase removal)
         function loadInvoice(invoice) {
+            showMessage('Loading invoices functionality has been removed in this version. Please implement your own storage solution.');
+            // The original logic for populating the form from an invoice object is kept
+            // but this function will not be called by the "View Saved Invoices" button.
             companyNameInput.value = invoice.companyName || '';
             companyLogoBase64 = invoice.companyLogo || null;
             if (companyLogoBase64) {
-                invoiceCompanyLogo.src = invoice.companyLogo || ''; // Use invoice.companyLogo directly
+                invoiceCompanyLogo.src = invoice.companyLogo || '';
                 invoiceCompanyLogo.style.display = 'block';
                 const img = document.createElement('img');
-                img.src = invoice.companyLogo || ''; // Use invoice.companyLogo directly
+                img.src = invoice.companyLogo || '';
                 img.alt = "Company Logo Preview";
                 img.className = "h-20 object-contain mt-2 rounded-md shadow-sm";
                 logoPreviewContainer.innerHTML = '';
@@ -1330,7 +1135,6 @@
                 invoiceCompanyLogo.style.display = 'none';
                 logoPreviewContainer.innerHTML = '';
             }
-
             clientNameInput.value = invoice.clientName || '';
             invoiceNumberInput.value = invoice.invoiceNumber || '';
             invoiceDateInput.value = invoice.invoiceDate || '';
@@ -1339,7 +1143,6 @@
             laborHoursInput.value = invoice.laborHours || 0;
             hourlyRateInput.value = invoice.hourlyRate || 0;
             taxRateInput.value = invoice.taxRate || 0;
-
             invoiceLineItems = invoice.items || [];
             renderEditableItems(); // Re-render the editable items table
             invoiceOutputDiv.classList.add('hidden'); // Hide the generated invoice display until re-generated
@@ -1349,7 +1152,7 @@
         closeSavedInvoicesModalBtn.addEventListener('click', () => {
             savedInvoicesModal.style.display = 'none';
         });
-
     </script>
+
 </body>
 </html>
