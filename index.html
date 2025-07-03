@@ -483,22 +483,7 @@
     </div>
 
     <script type="module">
-        // Firebase imports
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, collection, query, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        let invoiceLineItems = []; // Unified array to store all invoice items (extracted + manual)
-        let companyLogoBase64 = null; // To store the base64 string of the company logo
-        let geminiApiKey = localStorage.getItem('geminiApiKey') || ''; // Load API key from localStorage
-
-        // Firebase variables
-        let app;
-        let db;
-        let auth;
-        let userId = null;
-        let isAuthReady = false; // Flag to indicate if Firebase auth is ready
-
+  
         // Get DOM elements
         const companyNameInput = document.getElementById('company-name');
         const companyLogoInput = document.getElementById('company-logo');
